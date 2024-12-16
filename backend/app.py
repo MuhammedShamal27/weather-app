@@ -23,4 +23,5 @@ def get_weather():
 
 # Run the server
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # app.run(debug=True, host='0.0.0.0', port=5000)
+    app.run(ssl_context=("certs/cert.pem", "certs/key.pem"), host='0.0.0.0', port=5000)

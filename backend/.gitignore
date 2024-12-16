@@ -1,2 +1,9 @@
 # Virtual environments
 venv/
+
+# Ignore Python bytecode files
+*.pyc
+__pycache__/
+
+# Ignore certs folder
+/certs/
