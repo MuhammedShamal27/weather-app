@@ -1,0 +1,51 @@
+/* Container styling */
+.container {
+  font-family: "Arial, sans-serif";
+  text-align: center;
+  padding: 20px;
+}
+
+/* Button styling */
+.fetch-button {
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  transition: background-color 0.3s ease;
+}
+
+.fetch-button:hover {
+  background-color: #45a049;
+}
+
+/* Table styling */
+.weather-table {
+  width: 60%;
+  margin: 20px auto;
+  border-collapse: collapse;
+}
+
+.weather-table th,
+.weather-table td {
+  padding: 10px;
+  border: 1px solid #ddd;
+  text-align: center;
+}
+
+.weather-table th {
+  background-color: #f2f2f2;
+}
+
+/* Loading and Error States */
+.loading {
+  color: #ff9800;
+  font-weight: bold;
+}
+
+.error {
+  color: red;
+  font-weight: bold;
+}
