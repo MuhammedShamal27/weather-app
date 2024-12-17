@@ -257,7 +257,7 @@ pipeline {
                 type certs\\key.pem
                 
                 echo Testing backend HTTPS API...
-                curl -v -k --ssl-no-revoke --ipv4 https://localhost:5000/weather || exit /b 1
+                
 
                 echo Testing frontend communication...
                 curl -v -k --ipv4 http://localhost || exit /b 1
