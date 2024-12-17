@@ -43,10 +43,23 @@ pipeline {
                     steps {
                         echo "Building the backend..."
                         dir('backend') {
-                            bat '''
-                            python -m pip install --upgrade pip
-                            pip install -r requirements.txt
-                            '''
+                            withCredentials([
+                                string(credentialsId: 'cert-pem', variable: 'CERT_PEM'),  
+                                string(credentialsId: 'key-pem', variable: 'KEY_PEM')     
+                            ]) {
+                                script {
+                                    bat '''
+                                    mkdir certs
+                                    echo %CERT_PEM% > certs/cert.pem
+                                    echo %KEY_PEM% > certs/key.pem
+                                    '''
+                                    bat '''
+                                    python -m pip install --upgrade pip
+                                    pip install -r requirements.txt
+                                    '''                                    
+                                    bat 'docker build -t %BACKEND_IMAGE% ./backend'
+                                }
+                            }
                         }
                     }
                 }

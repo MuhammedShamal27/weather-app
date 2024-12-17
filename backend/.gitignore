@@ -5,5 +5,5 @@ venv/
 *.pyc
 __pycache__/
 
-# Ignore certs folder
-/certs/
+# # Ignore certs folder
+# /certs/
