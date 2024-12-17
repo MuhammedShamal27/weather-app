@@ -8,7 +8,7 @@ services:
     ports:
       - "5000:5000"
     volumes:
-      - ./certs:/app/certs
+      - ./backend/certs:/app/certs
     environment:
       - ENV=production
       - FLASK_ENV=production

@@ -44,20 +44,21 @@ pipeline {
                         echo "Building the backend..."
                         dir('backend') {
                             withCredentials([
-                                string(credentialsId: 'cert-pem', variable: 'CERT_PEM'),  
-                                string(credentialsId: 'key-pem', variable: 'KEY_PEM')     
+                                string(credentialsId: 'cert-pem', variable: 'CERT_PEM'),
+                                string(credentialsId: 'key-pem', variable: 'KEY_PEM')
                             ]) {
                                 script {
                                     bat '''
+                                    if not exist certs mkdir certs
                                     echo %CERT_PEM% > certs/cert.pem
                                     echo %KEY_PEM% > certs/key.pem
                                     '''
-                                    bat '''
-                                    python -m pip install --upgrade pip
-                                    pip install -r requirements.txt
-                                    '''                                    
                                 }
                             }
+                            bat '''
+                            python -m pip install --upgrade pip
+                            pip install -r requirements.txt
+                            '''
                         }
                     }
                 }
@@ -113,7 +114,7 @@ pipeline {
                 echo "Running post-deployment tests..."
                 bat '''
                 echo Testing backend HTTPS API...
-                curl -k --ssl-no-revoke https://localhost:5000/weather || exit /b 1
+                curl -v -k --ssl-no-revoke https://localhost:5000/weather || exit /b 1
 
                 echo Testing frontend communication...
                 curl -k http://localhost || exit /b 1
