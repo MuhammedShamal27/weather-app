@@ -20,7 +20,7 @@ pipeline {
                     branches: [[name: '*/main']],
                     userRemoteConfigs: [[
                         url: 'https://github.com/MuhammedShamal27/weather-app.git',
-                        credentialsId: 'jenkins-cicd' 
+                        credentialsId: 'jenkins-cicd'
                     ]]
                 ])
             }
@@ -106,10 +106,12 @@ pipeline {
         }
         failure {
             echo "Pipeline failed! Rolling back..."
-            bat '''
-            docker-compose down
-            echo Rollback complete. Deployment stopped.
-            '''
+            node {  
+                bat '''
+                docker-compose down
+                echo Rollback complete. Deployment stopped.
+                '''
+            }
         }
     }
 }
