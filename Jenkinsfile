@@ -106,12 +106,10 @@ pipeline {
         }
         failure {
             echo "Pipeline failed! Rolling back..."
-            node {  
-                bat '''
-                docker-compose down
-                echo Rollback complete. Deployment stopped.
-                '''
-            }
+            bat '''
+            docker-compose down
+            echo Rollback complete. Deployment stopped.
+            '''
         }
     }
 }
