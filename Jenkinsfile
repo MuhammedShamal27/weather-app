@@ -44,14 +44,15 @@ pipeline {
                         echo "Building the backend..."
                         dir('backend') {
                             withCredentials([
-                                string(credentialsId: 'cert-pem', variable: 'CERT_PEM'),
-                                string(credentialsId: 'key-pem', variable: 'KEY_PEM')
+                                file(credentialsId: 'cert-pem', variable: 'CERT_PEM_FILE'),
+                                file(credentialsId: 'key-pem', variable: 'KEY_PEM_FILE')
                             ]) {
                                 script {
                                     bat '''
+                                    echo "Copying certificate files to certs directory..."
                                     if not exist certs mkdir certs
-                                    echo %CERT_PEM% > certs/cert.pem
-                                    echo %KEY_PEM% > certs/key.pem
+                                    copy %CERT_PEM_FILE% certs\\cert.pem
+                                    copy %KEY_PEM_FILE% certs\\key.pem
                                     dir certs
                                     type certs\\cert.pem
                                     type certs\\key.pem
@@ -59,15 +60,16 @@ pipeline {
                                 }
                             }
                             bat '''
+                            echo "Installing Python dependencies..."
                             python -m pip install --upgrade pip
                             pip install -r requirements.txt
                             '''
                         }
                     }
                 }
+
             }
         }
-
         stage('Dockerize') {
             steps {
                 echo "Building Docker images..."
@@ -124,7 +126,7 @@ pipeline {
         success {
             echo "Pipeline completed successfully!"
             bat '''
-            docker-compose logs backend -f
+            docker-compose logs backend --tail=100
             '''
         }
         failure {
