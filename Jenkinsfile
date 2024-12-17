@@ -43,13 +43,35 @@ pipeline {
                     steps {
                         echo "Building the backend..."
                         dir('backend') {
-                            bat '''
-                            python -m pip install --upgrade pip
-                            pip install -r requirements.txt
-                            '''
+                            withCredentials([
+                                string(credentialsId: 'cert-pem', variable: 'CERT_PEM'),  
+                                string(credentialsId: 'key-pem', variable: 'KEY_PEM')     
+                            ]) {
+                                script {
+                                    bat '''
+                                    echo %CERT_PEM% > certs/cert.pem
+                                    echo %KEY_PEM% > certs/key.pem
+                                    '''
+                                    bat '''
+                                    python -m pip install --upgrade pip
+                                    pip install -r requirements.txt
+                                    '''                                    
+                                }
+                            }
                         }
                     }
                 }
+                // stage('Build Backend') {
+                //     steps {
+                //         echo "Building the backend..."
+                //         dir('backend') {
+                //             bat '''
+                //             python -m pip install --upgrade pip
+                //             pip install -r requirements.txt
+                //             '''
+                //         }
+                //     }
+                // }
             }
         }
 
