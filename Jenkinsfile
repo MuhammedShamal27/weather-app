@@ -68,7 +68,7 @@ pipeline {
                 echo "Pushing Docker images to Docker Hub..."
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     bat '''
-                    echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin
+                    echo|set /p="%DOCKER_PASS%" | docker login -u %DOCKER_USER% --password-stdin
                     docker push shamal27/weatherapp-frontend:latest
                     docker push shamal27/weatherapp-backend:latest
                     '''
