@@ -113,11 +113,12 @@ pipeline {
             steps {
                 echo "Running post-deployment tests..."
                 bat '''
+                docker exec weatherapp-backend ls /app/certs
                 echo Testing backend HTTPS API...
-                curl -v -k --ssl-no-revoke https://localhost:5000/weather || exit /b 1
+                curl -v -k --ssl-no-revoke --ipv4 https://localhost:5000/weather || exit /b 1
 
                 echo Testing frontend communication...
-                curl -k http://localhost || exit /b 1
+                curl -v -k --ipv4 http://localhost || exit /b 1
                 '''
             }
         }
