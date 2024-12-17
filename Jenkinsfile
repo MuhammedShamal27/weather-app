@@ -2,138 +2,107 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE_FRONTEND = 'weatherapp-frontend'
-        DOCKER_IMAGE_BACKEND = 'weatherapp-backend'
-        DOCKER_REGISTRY = 'shamal27' // Docker Hub Username
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds') 
+        FRONTEND_IMAGE = 'shamal27/weatherapp-frontend:latest'
+        BACKEND_IMAGE = 'shamal27/weatherapp-backend:latest'
     }
 
     parameters {
-        choice(name: 'ENVIRONMENT', choices: ['local', 'staging', 'production'], description: 'Select Deployment Environment')
-    }
-
-    options {
-        // Abort if the pipeline runs for more than 1 hour
-        timeout(time: 1, unit: 'HOURS') 
+        choice(name: 'ENV', choices: ['local', 'staging', 'production'], description: 'Choose deployment environment')
     }
 
     stages {
-        stage('Initialize') {
+        stage('Checkout Code') {
             steps {
-                script {
-                    echo "Running pipeline for ENVIRONMENT: ${params.ENVIRONMENT}"
-                }
-            }
-        }
-
-        stage('Clean Workspace') {
-            steps {
-                cleanWs() // Clean workspace before starting
-            }
-        }
-
-        stage('Checkout') {
-            steps {
-                // Pull the code from GitHub repository
-                echo 'Checking out repository...'
+                echo "Checking out code from GitHub..."
                 git branch: 'main', url: 'https://github.com/MuhammedShamal27/weather-app.git'
             }
         }
 
-        stage('Login to Docker Hub') {
-            steps {
-                script {
-                    // Replace with your actual Docker Hub credentials
-                    echo 'Logging in to Docker Hub...'
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                        sh 'echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin'
+        stage('Build') {
+            parallel {
+                stage('Build Frontend') {
+                    steps {
+                        echo "Building the frontend..."
+                        dir('frontend') {
+                            bat '''
+                            npm install
+                            npm run build
+                            '''
+                        }
+                    }
+                }
+                stage('Build Backend') {
+                    steps {
+                        echo "Building the backend..."
+                        dir('backend') {
+                            bat '''
+                            python -m pip install --upgrade pip
+                            pip install -r requirements.txt
+                            '''
+                        }
                     }
                 }
             }
         }
 
-        stage('Build Frontend') {
+        stage('Dockerize') {
             steps {
+                echo "Building Docker images..."
+                bat '''
+                docker build -t %FRONTEND_IMAGE% ./frontend
+                docker build -t %BACKEND_IMAGE% ./backend
+                '''
+            }
+        }
+
+        stage('Push to Docker Hub') {
+            steps {
+                echo "Pushing Docker images to Docker Hub..."
                 script {
-                    echo 'Building frontend Docker image...'
-                    sh 'docker build -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE_FRONTEND}:latest ./frontend'
+                    bat '''
+                    echo %DOCKERHUB_CREDENTIALS_PSW% | docker login -u %DOCKERHUB_CREDENTIALS_USR% --password-stdin
+                    docker push %FRONTEND_IMAGE%
+                    docker push %BACKEND_IMAGE%
+                    '''
                 }
             }
         }
 
-        stage('Build Backend') {
+        stage('Deploy Locally') {
             steps {
-                script {
-                    echo 'Building backend Docker image...'
-                    sh 'docker build -t ${DOCKER_REGISTRY}/${DOCKER_IMAGE_BACKEND}:latest ./backend'
-                }
+                echo "Deploying application using Docker Compose..."
+                bat '''
+                docker-compose down
+                docker-compose up -d
+                '''
             }
         }
 
-        stage('Push Docker Images') {
+        stage('Testing') {
             steps {
-                script {
-                    echo 'Pushing Docker images to registry...'
-                    sh 'docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE_FRONTEND}:latest'
-                    sh 'docker push ${DOCKER_REGISTRY}/${DOCKER_IMAGE_BACKEND}:latest'
-                }
-            }
-        }
+                echo "Running post-deployment tests..."
+                bat '''
+                echo Testing backend HTTPS API...
+                curl -k https://localhost:5000/weather || exit /b 1
 
-        stage('Deploy') {
-            steps {
-                script {
-                    echo "Starting deployment for environment: ${params.ENVIRONMENT}"
-                    if (params.ENVIRONMENT == 'local') {
-                        sh 'docker-compose -f docker-compose.local.yml up -d --build'
-                    } else if (params.ENVIRONMENT == 'staging') {
-                        sh 'docker-compose -f docker-compose.staging.yml up -d --build'
-                    } else if (params.ENVIRONMENT == 'production') {
-                        echo 'Production deployment logic goes here.'
-                        // Add your Kubernetes, Docker Swarm, or other production deployment script
-                    }
-                }
-            }
-        }
-
-        stage('Post-Deployment Testing') {
-            steps {
-                script {
-                    echo 'Running post-deployment tests...'
-                    // Replace './run_tests.sh' with your actual test script or commands
-                    sh './run_tests.sh'
-                }
-            }
-        }
-
-        stage('Rollback on Failure') {
-            when {
-                expression { currentBuild.result == 'FAILURE' }
-            }
-            steps {
-                script {
-                    echo 'Deployment failed! Rolling back to previous stable state...'
-                    // Add rollback logic here, such as using previous Docker images
-                }
+                echo Testing frontend communication...
+                curl -k http://localhost || exit /b 1
+                '''
             }
         }
     }
 
     post {
         success {
-            echo 'Pipeline completed successfully.'
-            // Add notifications like email/slack if needed
-            // mail to: 'your-email@example.com', subject: 'Build Success', body: 'The Jenkins pipeline succeeded.'
+            echo "Pipeline completed successfully!"
         }
-
         failure {
-            echo 'Pipeline failed. Sending notifications...'
-            // Add failure notification logic
-            // mail to: 'your-email@example.com', subject: 'Build Failure', body: 'The Jenkins pipeline failed.'
-        }
-
-        always {
-            echo 'Cleaning up unused Docker resources...'
-            sh 'docker system prune -f'
+            echo "Pipeline failed! Rolling back..."
+            bat '''
+            docker-compose down
+            echo Rollback complete. Deployment stopped.
+            '''
         }
     }
 }
