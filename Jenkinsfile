@@ -52,6 +52,10 @@ pipeline {
                                     if not exist certs mkdir certs
                                     echo %CERT_PEM% > certs/cert.pem
                                     echo %KEY_PEM% > certs/key.pem
+                                    bat 'dir certs'
+                                    bat 'type certs\\cert.pem'
+                                    bat 'type certs\\key.pem'
+
                                     '''
                                 }
                             }
@@ -114,8 +118,11 @@ pipeline {
                 echo "Running post-deployment tests..."
                 bat '''
                 docker exec weatherapp-backend ls /app/certs
+                bat 'dir certs'
+                bat 'type certs\\cert.pem'
+                bat 'type certs\\key.pem'
                 echo Testing backend HTTPS API...
-                curl -v -k --ssl-no-revoke --ipv4 https://localhost:5000/weather || exit /b 1
+                curl -v -k --ssl-no-revoke --ipv4 http://localhost:5000/weather || exit /b 1
 
                 echo Testing frontend communication...
                 curl -v -k --ipv4 http://localhost || exit /b 1
