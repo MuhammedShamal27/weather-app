@@ -6,8 +6,6 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . /app/
-COPY certs/ /app/certs/
-
 
 EXPOSE 5000
 
