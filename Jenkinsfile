@@ -91,7 +91,7 @@ pipeline {
                 echo "Running post-deployment tests..."
                 bat '''
                 echo Testing backend HTTPS API...
-                curl -k https://localhost:5000/weather || exit /b 1
+                curl -k --ssl-no-revoke https://localhost:5000/weather || exit /b 1
 
                 echo Testing frontend communication...
                 curl -k http://localhost || exit /b 1
