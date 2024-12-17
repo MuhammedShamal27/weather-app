@@ -52,10 +52,9 @@ pipeline {
                                     if not exist certs mkdir certs
                                     echo %CERT_PEM% > certs/cert.pem
                                     echo %KEY_PEM% > certs/key.pem
-                                    'dir certs'
-                                    'type certs\\cert.pem'
-                                    'type certs\\key.pem'
-
+                                    dir certs
+                                    type certs\\cert.pem
+                                    type certs\\key.pem
                                     '''
                                 }
                             }
@@ -66,17 +65,6 @@ pipeline {
                         }
                     }
                 }
-                // stage('Build Backend') {
-                //     steps {
-                //         echo "Building the backend..."
-                //         dir('backend') {
-                //             bat '''
-                //             python -m pip install --upgrade pip
-                //             pip install -r requirements.txt
-                //             '''
-                //         }
-                //     }
-                // }
             }
         }
 
@@ -96,8 +84,8 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     bat '''
                     echo|set /p="%DOCKER_PASS%" | docker login -u %DOCKER_USER% --password-stdin
-                    docker push shamal27/weatherapp-frontend:latest
-                    docker push shamal27/weatherapp-backend:latest
+                    docker push %FRONTEND_IMAGE%
+                    docker push %BACKEND_IMAGE%
                     '''
                 }
             }
@@ -113,23 +101,23 @@ pipeline {
             }
         }
 
-stage('Testing') {
-    steps {
-        echo "Running post-deployment tests..."
-        bat '''
-        docker exec weatherapp-backend ls /app/certs
-        dir certs
-        type certs\\cert.pem
-        type certs\\key.pem
-        
-        echo Testing backend HTTPS API...
-
-        echo Testing frontend communication...
-        curl -v -k --ipv4 http://localhost || exit /b 1
-        '''
+        stage('Testing') {
+            steps {
+                echo "Running post-deployment tests..."
+                bat '''
+                docker exec weatherapp-backend ls /app/certs
+                dir certs
+                type certs\\cert.pem
+                type certs\\key.pem
+                
+                echo Testing backend HTTPS API...
+                
+                echo Testing frontend communication...
+                curl -v -k --ipv4 http://localhost || exit /b 1
+                '''
+            }
+        }
     }
-}
-
 
     post {
         success {
@@ -143,5 +131,4 @@ stage('Testing') {
             '''
         }
     }
-}
 }
