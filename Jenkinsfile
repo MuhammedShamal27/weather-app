@@ -15,7 +15,14 @@ pipeline {
         stage('Checkout Code') {
             steps {
                 echo "Checking out code from GitHub..."
-                git branch: 'main', url: 'https://github.com/MuhammedShamal27/weather-app.git'
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/main']],
+                    userRemoteConfigs: [[
+                        url: 'https://github.com/MuhammedShamal27/weather-app.git',
+                        credentialsId: 'jenkins-cicd' 
+                    ]]
+                ])
             }
         }
 
