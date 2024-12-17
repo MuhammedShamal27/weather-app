@@ -1,0 +1,33 @@
+services:
+  backend:
+    image: shamal27/weatherapp-backend:latest
+    container_name: weatherapp-backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"  
+    environment:
+      - ENV=production
+      - FLASK_ENV=production
+    restart: unless-stopped
+    networks:
+      - weatherapp-network
+
+  frontend:
+    image: shamal27/weatherapp-frontend:latest
+    container_name: weatherapp-frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"  
+    depends_on:
+      - backend  
+    restart: unless-stopped
+    networks:
+      - weatherapp-network
+
+networks:
+  weatherapp-network:
+    driver: bridge
