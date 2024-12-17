@@ -66,11 +66,11 @@ pipeline {
         stage('Push to Docker Hub') {
             steps {
                 echo "Pushing Docker images to Docker Hub..."
-                script {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     bat '''
-                    echo %DOCKERHUB_CREDENTIALS_PSW% | docker login -u %DOCKERHUB_CREDENTIALS_USR% --password-stdin
-                    docker push %FRONTEND_IMAGE%
-                    docker push %BACKEND_IMAGE%
+                    echo %DOCKER_PASS% | docker login -u %DOCKER_USER% --password-stdin
+                    docker push shamal27/weatherapp-frontend:latest
+                    docker push shamal27/weatherapp-backend:latest
                     '''
                 }
             }
