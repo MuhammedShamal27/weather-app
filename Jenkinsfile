@@ -49,7 +49,6 @@ pipeline {
                             ]) {
                                 script {
                                     bat '''
-                                    mkdir certs
                                     echo %CERT_PEM% > certs/cert.pem
                                     echo %KEY_PEM% > certs/key.pem
                                     '''
