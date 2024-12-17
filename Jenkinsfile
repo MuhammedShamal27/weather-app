@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds') 
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds') // Docker Hub credentials ID
         FRONTEND_IMAGE = 'shamal27/weatherapp-frontend:latest'
         BACKEND_IMAGE = 'shamal27/weatherapp-backend:latest'
     }
@@ -106,10 +106,12 @@ pipeline {
         }
         failure {
             echo "Pipeline failed! Rolling back..."
-            bat '''
-            docker-compose down
-            echo Rollback complete. Deployment stopped.
-            '''
+            node { 
+                bat '''
+                docker-compose down
+                echo Rollback complete. Deployment stopped.
+                '''
+            }
         }
     }
 }
