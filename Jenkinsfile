@@ -56,7 +56,6 @@ pipeline {
                                     python -m pip install --upgrade pip
                                     pip install -r requirements.txt
                                     '''                                    
-                                    bat 'docker build -t %BACKEND_IMAGE% ./backend'
                                 }
                             }
                         }
