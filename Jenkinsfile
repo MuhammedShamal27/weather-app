@@ -97,7 +97,7 @@ pipeline {
                 bat '''
                 docker-compose down
                 docker-compose up -d
-                docker-compose logs --tail=100
+                
                 '''
             }
         }
@@ -123,7 +123,9 @@ pipeline {
     post {
         success {
             echo "Pipeline completed successfully!"
-
+            bat '''
+            docker-compose logs backend -f
+            '''
         }
         failure {
             echo "Pipeline failed! Rolling back..."
