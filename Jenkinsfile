@@ -168,17 +168,25 @@ pipeline {
                 echo "Pipeline failed! Rolling back to the last successful deployment..."
                 if (params.ENV == 'production') {
                     echo "Rolling back production environment..."
-                    bat '''
-                    ssh -i S:/DOWNLOADS/production.pem ubuntu@51.20.243.232 "
-                    cd /home/ubuntu/weatherapp &&
-                    docker-compose -f docker-compose.production.yml down &&
-                    docker pull %FRONTEND_IMAGE_ROLLBACK% &&
-                    docker pull %BACKEND_IMAGE_ROLLBACK% &&
-                    docker tag %FRONTEND_IMAGE_ROLLBACK% %FRONTEND_IMAGE% &&
-                    docker tag %BACKEND_IMAGE_ROLLBACK% %BACKEND_IMAGE% &&
-                    docker-compose -f docker-compose.production.yml up -d
-                    "
-                    '''
+                    withCredentials([file(credentialsId: 'production-pem', variable: 'PROD_PEM_FILE')]) {
+                        bat '''
+                        echo "Adjusting permissions on the PEM file for rollback..."
+                        icacls "%PROD_PEM_FILE%" /inheritance:r
+                        icacls "%PROD_PEM_FILE%" /remove "BUILTIN\\Users"
+                        icacls "%PROD_PEM_FILE%" /grant:r "NT AUTHORITY\\SYSTEM":F
+                        icacls "%PROD_PEM_FILE%"
+
+                        "C:\\Windows\\System32\\OpenSSH\\ssh.exe" -o StrictHostKeyChecking=no -i "%PROD_PEM_FILE%" ubuntu@51.20.243.232 "
+                        cd /home/ubuntu/weatherapp &&
+                        docker pull %FRONTEND_IMAGE_ROLLBACK% &&
+                        docker pull %BACKEND_IMAGE_ROLLBACK% &&
+                        docker tag %FRONTEND_IMAGE_ROLLBACK% %FRONTEND_IMAGE% &&
+                        docker tag %BACKEND_IMAGE_ROLLBACK% %BACKEND_IMAGE% &&
+                        docker-compose -f docker-compose.production.yml down &&
+                        docker-compose -f docker-compose.production.yml up -d
+                        "
+                        '''
+                    }
                 } else {
                     echo "Rolling back local environment..."
                     bat '''
