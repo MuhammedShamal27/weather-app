@@ -109,7 +109,11 @@ pipeline {
                         withCredentials([file(credentialsId: 'production-pem', variable: 'PROD_PEM_FILE')]) {
                             bat '''
                             echo "Deploying to the production server..."
-                            ssh -i "%PROD_PEM_FILE%" ubuntu@51.20.243.232 "cd /home/ubuntu/weatherapp && docker-compose -f docker-compose.production.yml down && docker-compose -f docker-compose.production.yml up -d"
+                            echo "PEM file path: %PROD_PEM_FILE%"
+                            dir %PROD_PEM_FILE%
+                            type %PROD_PEM_FILE%
+
+                            "C:\\Windows\\System32\\OpenSSH\\ssh.exe" -v -o StrictHostKeyChecking=no -i "%PROD_PEM_FILE%" ubuntu@51.20.243.232 "cd /home/ubuntu/weatherapp && docker-compose -f docker-compose.production.yml down && docker-compose -f docker-compose.production.yml up -d"
                             '''
                         }
                     } else {
