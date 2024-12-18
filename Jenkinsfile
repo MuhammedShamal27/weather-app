@@ -95,12 +95,8 @@ pipeline {
                 script {
                     if (params.ENV == 'production') {
                         echo "Deploying to production..."
-                        sh '''
-                        ssh -i production.pem ubuntu@51.20.243.232 '
-                        cd /home/ubuntu/weatherapp &&
-                        docker-compose -f docker-compose.production.yml down &&
-                        docker-compose -f docker-compose.production.yml up -d
-                        '
+                        bat '''
+                        ssh -i production.pem ubuntu@51.20.243.232 "cd /home/ubuntu/weatherapp && docker-compose -f docker-compose.production.yml down && docker-compose -f docker-compose.production.yml up -d"
                         '''
                     } else {
                         echo "Deploying to local environment..."
