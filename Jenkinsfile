@@ -139,6 +139,9 @@ pipeline {
                 script {
                     if (params.ENV == 'production') {
                         bat '''
+                        echo "Printing backend container logs for debugging..."
+                        docker logs weatherapp-backend || echo "Failed to fetch backend logs."
+
                         echo Testing backend HTTPS API on production...
                         curl -k --ssl-no-revoke https://royalsofa.online:5000/weather || exit /b 1
 
