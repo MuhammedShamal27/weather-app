@@ -143,10 +143,10 @@ pipeline {
                         docker logs weatherapp-backend || echo "Failed to fetch backend logs."
 
                         echo Testing backend HTTPS API on production...
-                        curl -k --ssl-no-revoke https://royalsofa.online:5000/weather || exit /b 1
+                        curl -k --ssl-no-revoke https://royalsofa.online || exit /b 1
 
                         echo Testing frontend communication on production...
-                        curl -v -k --ipv4 http://royalsofa.online || exit /b 1
+                        curl -v -k --ipv4 https://royalsofa.online || exit /b 1
                         '''
                     } else {
                         bat '''
