@@ -112,8 +112,13 @@ pipeline {
                             echo "PEM file path: %PROD_PEM_FILE%"
                             dir %PROD_PEM_FILE%
                             type %PROD_PEM_FILE%
+                            
+                            echo "Adjusting permissions on the PEM file..."
+                            icacls "%PROD_PEM_FILE%" /inheritance:r
+                            icacls "%PROD_PEM_FILE%" /grant:r "%COMPUTERNAME%\\%USERNAME%:F"
+                            icacls "%PROD_PEM_FILE%"
 
-                            "C:\\Windows\\System32\\OpenSSH\\ssh.exe" -v -o StrictHostKeyChecking=no -i "%PROD_PEM_FILE%" ubuntu@51.20.243.232 "cd /home/ubuntu/weatherapp && docker-compose -f docker-compose.production.yml down && docker-compose -f docker-compose.production.yml up -d"
+                            "C:\\Windows\\System32\\OpenSSH\\ssh.exe" -v -o StrictHostKeyChecking=no -o StrictModes=no -i "%PROD_PEM_FILE%" ubuntu@51.20.243.232 "cd /home/ubuntu/weatherapp && sudo docker-compose -f docker-compose.production.yml down && sudo docker-compose -f docker-compose.production.yml up -d"
                             '''
                         }
                     } else {
