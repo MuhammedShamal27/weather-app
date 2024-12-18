@@ -12,7 +12,7 @@ function App() {
     setError(null);
 
     try {
-      const response = await fetch("/weather");
+      const response = await fetch("https://localhost:5000/weather");
       if (!response.ok) throw new Error("Failed to fetch weather data");
 
       const data = await response.json();
