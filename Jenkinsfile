@@ -9,34 +9,13 @@ pipeline {
         BACKEND_IMAGE_ROLLBACK = 'shamal27/weatherapp-backend:rollback'
     }
 
-    // Remove the parameters block
-    // parameters {
-    //     choice(name: 'ENV', choices: ['local', 'staging', 'production'], description: 'Choose deployment environment')
-    // }
-
     stages {
-        stage('Determine Environment') {
-            steps {
-                script {
-                    // Determine the environment based on the branch name
-                    if (env.BRANCH_NAME == 'main') {
-                        env.DEPLOY_ENV = 'production'
-                    } else if (env.BRANCH_NAME == 'develop') {
-                        env.DEPLOY_ENV = 'staging'
-                    } else {
-                        env.DEPLOY_ENV = 'local'
-                    }
-                    echo "Deployment environment set to: ${env.DEPLOY_ENV}"
-                }
-            }
-        }
-
         stage('Checkout Code') {
             steps {
                 echo "Checking out code from GitHub..."
                 checkout([
                     $class: 'GitSCM',
-                    branches: [[name: "*/${env.BRANCH_NAME}"]],
+                    branches: [[name: '*/main']],
                     userRemoteConfigs: [[
                         url: 'https://github.com/MuhammedShamal27/weather-app.git',
                         credentialsId: 'jenkins-cicd'
@@ -119,64 +98,26 @@ pipeline {
             }
         }
 
-        stage('Deploy') {
+        stage('Deploy to Local') {
             steps {
-                script {
-                    if (env.DEPLOY_ENV == 'production') {
-                        echo "Deploying to production..."
-                        withCredentials([file(credentialsId: 'production-pem', variable: 'PROD_PEM_FILE')]) {
-                            bat '''
-                            echo "Deploying to the production server..."
-                            echo "PEM file path: %PROD_PEM_FILE%"
-                            dir %PROD_PEM_FILE%
-                            type %PROD_PEM_FILE%
-
-                            echo "Adjusting permissions on the PEM file..."
-                            icacls "%PROD_PEM_FILE%" /inheritance:r
-                            icacls "%PROD_PEM_FILE%" /remove "BUILTIN\\Users"
-                            REM Change SYSTEM to the actual user Jenkins runs as, if different.
-                            icacls "%PROD_PEM_FILE%" /grant:r "NT AUTHORITY\\SYSTEM":F
-                            icacls "%PROD_PEM_FILE%"
-
-                            "C:\\Windows\\System32\\OpenSSH\\ssh.exe" -v -o StrictHostKeyChecking=no -i "%PROD_PEM_FILE%" ubuntu@51.20.243.232 "cd /home/ubuntu/weatherapp && docker-compose -f docker-compose.production.yml down && docker-compose -f docker-compose.production.yml up -d"
-                            '''
-                        }
-                    } else {
-                        echo "Deploying to ${env.DEPLOY_ENV} environment..."
-                        bat '''
-                        docker-compose down
-                        docker-compose up -d
-                        '''
-                    }
-                }
+                echo "Deploying to local environment..."
+                bat '''
+                docker-compose down
+                docker-compose up -d
+                '''
             }
         }
 
         stage('Testing') {
             steps {
                 echo "Running post-deployment tests..."
-                script {
-                    if (env.DEPLOY_ENV == 'production') {
-                        bat '''
-                        echo "Printing backend container logs for debugging..."
-                        docker logs weatherapp-backend || echo "Failed to fetch backend logs."
-
-                        echo Testing backend HTTPS API on production...
-                        curl -k --ssl-no-revoke https://royalsofa.online || exit /b 1
-
-                        echo Testing frontend communication on production...
-                        curl -v -k --ipv4 https://royalsofa.online || exit /b 1
-                        '''
-                    } else {
-                        bat '''
-                        docker exec weatherapp-backend ls /app/certs
-                        echo Testing backend HTTPS API locally...
-                        curl -k --ssl-no-revoke https://localhost:5000/weather || exit /b 1
-                        echo Testing frontend communication locally...
-                        curl -v -k --ipv4 http://localhost || exit /b 1
-                        '''
-                    }
-                }
+                bat '''
+                docker exec weatherapp-backend ls /app/certs
+                echo Testing backend HTTPS API locally...
+                curl -k --ssl-no-revoke https://localhost:5000/weather || exit /b 1
+                echo Testing frontend communication locally...
+                curl -v -k --ipv4 http://localhost || exit /b 1
+                '''
             }
         }
     }
@@ -186,41 +127,15 @@ pipeline {
             echo "Pipeline completed successfully!"
         }
         failure {
-            script {
-                echo "Pipeline failed! Rolling back to the last successful deployment..."
-                if (env.DEPLOY_ENV == 'production') {
-                    echo "Rolling back production environment..."
-                    withCredentials([file(credentialsId: 'production-pem', variable: 'PROD_PEM_FILE')]) {
-                        bat '''
-                        echo "Adjusting permissions on the PEM file for rollback..."
-                        icacls "%PROD_PEM_FILE%" /inheritance:r
-                        icacls "%PROD_PEM_FILE%" /remove "BUILTIN\\Users"
-                        icacls "%PROD_PEM_FILE%" /grant:r "NT AUTHORITY\\SYSTEM":F
-                        icacls "%PROD_PEM_FILE%"
-
-                        "C:\\Windows\\System32\\OpenSSH\\ssh.exe" -o StrictHostKeyChecking=no -i "%PROD_PEM_FILE%" ubuntu@51.20.243.232 "
-                        cd /home/ubuntu/weatherapp &&
-                        docker pull %FRONTEND_IMAGE_ROLLBACK% &&
-                        docker pull %BACKEND_IMAGE_ROLLBACK% &&
-                        docker tag %FRONTEND_IMAGE_ROLLBACK% %FRONTEND_IMAGE% &&
-                        docker tag %BACKEND_IMAGE_ROLLBACK% %BACKEND_IMAGE% &&
-                        docker-compose -f docker-compose.production.yml down &&
-                        docker-compose -f docker-compose.production.yml up -d
-                        "
-                        '''
-                    }
-                } else {
-                    echo "Rolling back ${env.DEPLOY_ENV} environment..."
-                    bat '''
-                    docker-compose down
-                    docker pull %FRONTEND_IMAGE_ROLLBACK%
-                    docker pull %BACKEND_IMAGE_ROLLBACK%
-                    docker tag %FRONTEND_IMAGE_ROLLBACK% %FRONTEND_IMAGE%
-                    docker tag %BACKEND_IMAGE_ROLLBACK% %BACKEND_IMAGE%
-                    docker-compose up -d
-                    '''
-                }
-            }
+            echo "Pipeline failed! Rolling back to the last successful deployment..."
+            bat '''
+            docker-compose down
+            docker pull %FRONTEND_IMAGE_ROLLBACK%
+            docker pull %BACKEND_IMAGE_ROLLBACK%
+            docker tag %FRONTEND_IMAGE_ROLLBACK% %FRONTEND_IMAGE%
+            docker tag %BACKEND_IMAGE_ROLLBACK% %BACKEND_IMAGE%
+            docker-compose up -d
+            '''
         }
     }
 }
