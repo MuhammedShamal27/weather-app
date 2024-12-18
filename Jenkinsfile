@@ -9,17 +9,34 @@ pipeline {
         BACKEND_IMAGE_ROLLBACK = 'shamal27/weatherapp-backend:rollback'
     }
 
-    parameters {
-        choice(name: 'ENV', choices: ['local', 'staging', 'production'], description: 'Choose deployment environment')
-    }
+    // Remove the parameters block
+    // parameters {
+    //     choice(name: 'ENV', choices: ['local', 'staging', 'production'], description: 'Choose deployment environment')
+    // }
 
     stages {
+        stage('Determine Environment') {
+            steps {
+                script {
+                    // Determine the environment based on the branch name
+                    if (env.BRANCH_NAME == 'main') {
+                        env.DEPLOY_ENV = 'production'
+                    } else if (env.BRANCH_NAME == 'develop') {
+                        env.DEPLOY_ENV = 'staging'
+                    } else {
+                        env.DEPLOY_ENV = 'local'
+                    }
+                    echo "Deployment environment set to: ${env.DEPLOY_ENV}"
+                }
+            }
+        }
+
         stage('Checkout Code') {
             steps {
                 echo "Checking out code from GitHub..."
                 checkout([
                     $class: 'GitSCM',
-                    branches: [[name: '*/main']],
+                    branches: [[name: "*/${env.BRANCH_NAME}"]],
                     userRemoteConfigs: [[
                         url: 'https://github.com/MuhammedShamal27/weather-app.git',
                         credentialsId: 'jenkins-cicd'
@@ -101,10 +118,11 @@ pipeline {
                 }
             }
         }
+
         stage('Deploy') {
             steps {
                 script {
-                    if (params.ENV == 'production') {
+                    if (env.DEPLOY_ENV == 'production') {
                         echo "Deploying to production..."
                         withCredentials([file(credentialsId: 'production-pem', variable: 'PROD_PEM_FILE')]) {
                             bat '''
@@ -124,7 +142,7 @@ pipeline {
                             '''
                         }
                     } else {
-                        echo "Deploying to local environment..."
+                        echo "Deploying to ${env.DEPLOY_ENV} environment..."
                         bat '''
                         docker-compose down
                         docker-compose up -d
@@ -133,11 +151,12 @@ pipeline {
                 }
             }
         }
+
         stage('Testing') {
             steps {
                 echo "Running post-deployment tests..."
                 script {
-                    if (params.ENV == 'production') {
+                    if (env.DEPLOY_ENV == 'production') {
                         bat '''
                         echo "Printing backend container logs for debugging..."
                         docker logs weatherapp-backend || echo "Failed to fetch backend logs."
@@ -169,7 +188,7 @@ pipeline {
         failure {
             script {
                 echo "Pipeline failed! Rolling back to the last successful deployment..."
-                if (params.ENV == 'production') {
+                if (env.DEPLOY_ENV == 'production') {
                     echo "Rolling back production environment..."
                     withCredentials([file(credentialsId: 'production-pem', variable: 'PROD_PEM_FILE')]) {
                         bat '''
@@ -191,7 +210,7 @@ pipeline {
                         '''
                     }
                 } else {
-                    echo "Rolling back local environment..."
+                    echo "Rolling back ${env.DEPLOY_ENV} environment..."
                     bat '''
                     docker-compose down
                     docker pull %FRONTEND_IMAGE_ROLLBACK%
