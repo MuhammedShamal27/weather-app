@@ -138,12 +138,12 @@ pipeline {
                 echo "Running post-deployment tests..."
                 script {
                     if (params.ENV == 'production') {
-                        sh '''
-                        echo "Testing backend HTTPS API on production..."
-                        curl -k --ssl-no-revoke https://royalsofa.online:5000/weather || exit 1
+                        bat '''
+                        echo Testing backend HTTPS API on production...
+                        curl -k --ssl-no-revoke https://royalsofa.online:5000/weather || exit /b 1
 
-                        echo "Testing frontend communication on production..."
-                        curl -v -k --ipv4 http://royalsofa.online || exit 1
+                        echo Testing frontend communication on production...
+                        curl -v -k --ipv4 http://royalsofa.online || exit /b 1
                         '''
                     } else {
                         bat '''
