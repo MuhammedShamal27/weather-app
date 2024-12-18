@@ -109,7 +109,7 @@ pipeline {
                         withCredentials([file(credentialsId: 'production-pem', variable: 'PROD_PEM_FILE')]) {
                             bat '''
                             echo "Deploying to the production server..."
-                            plink -i "%PROD_PEM_FILE%" ubuntu@51.20.243.232 "cd /home/ubuntu/weatherapp && docker-compose -f docker-compose.production.yml down && docker-compose -f docker-compose.production.yml up -d"
+                            ssh -i "%PROD_PEM_FILE%" ubuntu@51.20.243.232 "cd /home/ubuntu/weatherapp && docker-compose -f docker-compose.production.yml down && docker-compose -f docker-compose.production.yml up -d"
                             '''
                         }
                     } else {
