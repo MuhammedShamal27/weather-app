@@ -2,9 +2,11 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds') // Docker Hub credentials ID
+        DOCKERHUB_CREDENTIALS = credentials('dockerhub-creds') 
         FRONTEND_IMAGE = 'shamal27/weatherapp-frontend:latest'
         BACKEND_IMAGE = 'shamal27/weatherapp-backend:latest'
+        FRONTEND_IMAGE_ROLLBACK = 'shamal27/weatherapp-frontend:rollback'
+        BACKEND_IMAGE_ROLLBACK = 'shamal27/weatherapp-backend:rollback'
     }
 
     parameters {
@@ -83,6 +85,16 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'dockerhub-creds', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                     bat '''
                     echo|set /p="%DOCKER_PASS%" | docker login -u %DOCKER_USER% --password-stdin
+                    
+                    echo "Tagging previous images as rollback versions..."
+                    docker pull %FRONTEND_IMAGE% || echo "No previous frontend image found."
+                    docker tag %FRONTEND_IMAGE% %FRONTEND_IMAGE_ROLLBACK%
+                    docker push %FRONTEND_IMAGE_ROLLBACK%
+
+                    docker pull %BACKEND_IMAGE% || echo "No previous backend image found."
+                    docker tag %BACKEND_IMAGE% %BACKEND_IMAGE_ROLLBACK%
+                    docker push %BACKEND_IMAGE_ROLLBACK%
+                    
                     docker push %FRONTEND_IMAGE%
                     docker push %BACKEND_IMAGE%
                     '''
@@ -141,20 +153,29 @@ pipeline {
         }
         failure {
             script {
+                echo "Pipeline failed! Rolling back to the last successful deployment..."
                 if (params.ENV == 'production') {
-                    echo "Pipeline failed! Rolling back production deployment..."
-                    sh '''
-                    ssh -i production.pem ubuntu@51.20.243.232 '
+                    echo "Rolling back production environment..."
+                    bat '''
+                    ssh -i S:/DOWNLOADS/production.pem ubuntu@51.20.243.232 "
                     cd /home/ubuntu/weatherapp &&
                     docker-compose -f docker-compose.production.yml down &&
-                    echo "Rollback complete. Production deployment stopped."
-                    '
+                    docker pull %FRONTEND_IMAGE_ROLLBACK% &&
+                    docker pull %BACKEND_IMAGE_ROLLBACK% &&
+                    docker tag %FRONTEND_IMAGE_ROLLBACK% %FRONTEND_IMAGE% &&
+                    docker tag %BACKEND_IMAGE_ROLLBACK% %BACKEND_IMAGE% &&
+                    docker-compose -f docker-compose.production.yml up -d
+                    "
                     '''
                 } else {
-                    echo "Pipeline failed! Rolling back local deployment..."
+                    echo "Rolling back local environment..."
                     bat '''
                     docker-compose down
-                    echo Rollback complete. Local deployment stopped.
+                    docker pull %FRONTEND_IMAGE_ROLLBACK%
+                    docker pull %BACKEND_IMAGE_ROLLBACK%
+                    docker tag %FRONTEND_IMAGE_ROLLBACK% %FRONTEND_IMAGE%
+                    docker tag %BACKEND_IMAGE_ROLLBACK% %BACKEND_IMAGE%
+                    docker-compose up -d
                     '''
                 }
             }
