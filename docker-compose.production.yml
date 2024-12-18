@@ -1,0 +1,29 @@
+services:
+  backend:
+    image: shamal27/weatherapp-backend:latest
+    container_name: weatherapp-backend
+    ports:
+      - "5000:5000"  
+    volumes:
+      - /home/ubuntu/weatherapp/certs:/app/certs  
+    environment:
+      - ENV=production
+      - FLASK_ENV=production
+    restart: unless-stopped
+    networks:
+      - weatherapp-network
+
+  frontend:
+    image: shamal27/weatherapp-frontend:latest
+    container_name: weatherapp-frontend
+    ports:
+      - "80:80"  
+    depends_on:
+      - backend  
+    restart: unless-stopped
+    networks:
+      - weatherapp-network
+
+networks:
+  weatherapp-network:
+    driver: bridge
