@@ -101,15 +101,17 @@ pipeline {
                 }
             }
         }
-
         stage('Deploy') {
             steps {
                 script {
                     if (params.ENV == 'production') {
                         echo "Deploying to production..."
-                        bat '''
-                        ssh -i S:/DOWNLOADS/production.pem ubuntu@51.20.243.232 "cd /home/ubuntu/weatherapp && docker-compose -f docker-compose.production.yml down && docker-compose -f docker-compose.production.yml up -d"
-                        '''
+                        withCredentials([file(credentialsId: 'production-pem', variable: 'PROD_PEM_FILE')]) {
+                            bat '''
+                            echo "Deploying to the production server..."
+                            plink -i "%PROD_PEM_FILE%" ubuntu@51.20.243.232 "cd /home/ubuntu/weatherapp && docker-compose -f docker-compose.production.yml down && docker-compose -f docker-compose.production.yml up -d"
+                            '''
+                        }
                     } else {
                         echo "Deploying to local environment..."
                         bat '''
@@ -120,7 +122,6 @@ pipeline {
                 }
             }
         }
-
         stage('Testing') {
             steps {
                 echo "Running post-deployment tests..."
