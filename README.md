@@ -34,13 +34,13 @@ Add webhooks to automatically trigger Jenkins build on push.
 3. Run Frontend and Backend Locally:
    
    Frontend (Vite):
-   cd frontend
-   npm install
+   cd frontend,
+   npm install,
    npm run dev
 
    Backend (Flask):
-   cd backend
-   pip install -r requirements.txt
+   cd backend,
+   pip install -r requirements.txt,
    python app.py
    
 Run Jenkins Pipeline:
