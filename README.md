@@ -31,6 +31,18 @@ SCM: GitHub repository URL, use jenkins-cicd credentials, Branch: feature/local-
 Set script path to Jenkinsfile.
 Add webhooks to automatically trigger Jenkins build on push.
 
+3. Run Frontend and Backend Locally:
+   
+   Frontend (Vite):
+   cd frontend
+   npm install
+   npm run dev
+
+   Backend (Flask):
+   cd backend
+   pip install -r requirements.txt
+   python app.py
+   
 Run Jenkins Pipeline:
 
 The Jenkins build is triggered when code is pushed to GitHub, and the webhook notifies Jenkins.
