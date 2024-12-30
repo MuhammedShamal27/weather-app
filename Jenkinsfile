@@ -15,7 +15,7 @@ pipeline {
                 echo "Checking out code from GitHub..."
                 checkout([
                     $class: 'GitSCM',
-                    branches: [[name: '*/main']],
+                    branches: [[name: '*/feature/local-deployment']],
                     userRemoteConfigs: [[
                         url: 'https://github.com/MuhammedShamal27/weather-app.git',
                         credentialsId: 'jenkins-cicd'
