@@ -49,7 +49,6 @@ function App() {
               <th>Place</th>
               <th>Time</th>
               <th>Temperature</th>
-              <th>new</th>
             </tr>
           </thead>
           <tbody>
