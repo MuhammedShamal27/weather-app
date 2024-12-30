@@ -49,6 +49,7 @@ pipeline {
                                     bat '''
                                     echo "Copying certificate files to certs directory..."
                                     if not exist certs mkdir certs
+                                    dir 
                                     copy %CERT_PEM_FILE% certs\\cert.pem
                                     copy %KEY_PEM_FILE% certs\\key.pem
                                     '''
